@@ -56,7 +56,7 @@ bot.command('/meme', (ctx: Context) => {
         if ( myDb[chatId] === undefined ) {
             myDb[chatId] = { words: [], opts: { memes: true }};
         } else {
-            myDb[chatId].opts.memes = true;
+            myDb[chatId].opts.memes = !myDb[chatId].opts.memes;
         }
 
         ctx.reply("Memes have been enabled for your chat room");
