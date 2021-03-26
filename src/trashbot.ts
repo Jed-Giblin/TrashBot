@@ -18,6 +18,7 @@ interface ClientOpts {
     words: string[],
     opts: {
         memes: boolean
+        readOnlyUsers: number[]
     }
 }
 
@@ -65,6 +66,22 @@ export class TrashBot {
      * Initialize all the handlers
      */
     initCommands() {
+        this.bot.command('/pto', async( ctx: Context) => {
+            let message = ctx.message;
+            if ( message !== undefined ) {
+                let author = message.from.id;
+                let chat = message.chat.id;
+                if ( this.myDb[chat] !== undefined ) {
+                    let opts = this.myDb[chat];
+                    if ( opts.opts.readOnlyUsers.indexOf(author) > -1 ) {
+                        let index = opts.opts.readOnlyUsers.indexOf(author);
+                        opts.opts.readOnlyUsers.splice(index, 1);
+                    } else {
+                        opts.opts.readOnlyUsers.push(author);
+                    }
+                }
+            }
+        });
         this.bot.command('newword', this.newWordCallback.bind(this));
         this.bot.command('/meme', this.memeCallback.bind(this));
         this.bot.command('/shows', async (ctx: Context) => {
@@ -167,7 +184,7 @@ export class TrashBot {
         if (message !== undefined) {
             let chatId = message.chat.id;
             if (this.myDb[chatId] === undefined) {
-                this.myDb[chatId] = {words: [], opts: {memes: true}};
+                this.myDb[chatId] = {words: [], opts: {memes: true, readOnlyUsers: []}};
             } else {
                 this.myDb[chatId].opts.memes = !this.myDb[chatId].opts.memes;
             }
@@ -185,7 +202,7 @@ export class TrashBot {
                 let realWord = realWords.join(" ");
                 let chatid = message.chat.id;
                 if (this.myDb[chatid] === undefined) {
-                    this.myDb[chatid] = {words: [], opts: {memes: false}};
+                    this.myDb[chatid] = {words: [], opts: {memes: false, readOnlyUsers: []}};
                     this.myDb[chatid].words.push(`.*${realWord.toLowerCase()}.*`);
                     ctx.reply(`Added a new trigger word: ${realWord}`);
                 } else {
