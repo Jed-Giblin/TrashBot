@@ -67,14 +67,14 @@ export class TrashBot {
      * Initialize all the handlers
      */
     initCommands() {
-        this.bot.command('/pto', async( ctx: Context) => {
+        this.bot.command('/pto', async (ctx: Context) => {
             let message = ctx.message;
-            if ( message !== undefined ) {
+            if (message !== undefined) {
                 let author = message.from.id;
                 let chat = message.chat.id;
-                if ( this.myDb[chat] !== undefined ) {
+                if (this.myDb[chat] !== undefined) {
                     let opts = this.myDb[chat];
-                    if ( opts.opts.readOnlyUsers.indexOf(author) > -1 ) {
+                    if (opts.opts.readOnlyUsers.indexOf(author) > -1) {
                         let index = opts.opts.readOnlyUsers.indexOf(author);
                         opts.opts.readOnlyUsers.splice(index, 1);
                     } else {
@@ -86,19 +86,55 @@ export class TrashBot {
         this.bot.command('newword', this.newWordCallback.bind(this));
         this.bot.command('/meme', this.memeCallback.bind(this));
         this.bot.command('/joinall', async (ctx: Context) => {
-           let message = ctx.message;
-           if (message != undefined ) {
-               let author = message.from.id;
-               let chat = message.chat.id;
-               if ( this.myDb[chat] !== undefined ) {
-                   let opts = this.myDb[chat];
-                   if ( typeof(opts.opts.allUsers) === 'undefined' ) {
-                       opts.opts.allUsers = [];
-                   }
-                   opts.opts.allUsers.push(author);
-               }
-           }
+            let message = ctx.message;
+            if (message != undefined) {
+                let author = message.from.id;
+                let chat = message.chat.id;
+                if (this.myDb[chat] !== undefined) {
+                    let opts = this.myDb[chat];
+                    if (typeof (opts.opts.allUsers) === 'undefined') {
+                        opts.opts.allUsers = [];
+                    }
+                    opts.opts.allUsers.push(author);
+                }
+            }
         });
+
+        this.bot.command('/noall', async (ctx: Context) => {
+            let message = ctx.message;
+            if (message != undefined) {
+                let author = message.from.id;
+                let chat = message.chat.id;
+                if (this.myDb[chat] !== undefined) {
+                    let opts = this.myDb[chat];
+                    if (typeof (opts.opts.allUsers) === 'undefined') {
+                        opts.opts.allUsers = [];
+                    }
+                    let index = opts.opts.allUsers.indexOf(author);
+                    if (index > -1) {
+                        opts.opts.allUsers.splice(index, 1);
+                    }
+                }
+            }
+        });
+
+        this.bot.command('/sendall', async (ctx: Context) => {
+            let message = ctx.message;
+            if (message != undefined) {
+                let chat = message.chat.id;
+                if (this.myDb[chat] !== undefined) {
+                    let opts = this.myDb[chat];
+                    if ( opts.opts.allUsers.length > 0 ) {
+                        let mentions: string[] = [];
+                        opts.opts.allUsers.forEach((id: number) => {
+                           mentions.push(`[](tg://user?id=${id})`)
+                        });
+                        ctx.replyWithMarkdown(mentions.join(''), {reply_to_message_id: message.message_id, parse_mode: "Markdown"})
+                    }
+                }
+            }
+        });
+
         this.bot.command('/shows', async (ctx: Context) => {
             if (ctx.chat?.type !== 'private') {
                 await TrashBot.errorPrivateOnly(ctx);
@@ -144,13 +180,13 @@ export class TrashBot {
                 if (show) {
                     await ctx.answerCbQuery();
                     await ctx.reply("Adding show!");
-                    this.sonarClient.addShow(show, async (err, data:AddShowResult) => {
-                       if ( !err ) {
-                           await this.sonarClient.searchForEpisodes(data.id);
-                           await ctx.reply("Trying to download the last season");
-                       } else {
-                           await ctx.reply(`Something went wrong: ${err}`);
-                       }
+                    this.sonarClient.addShow(show, async (err, data: AddShowResult) => {
+                        if (!err) {
+                            await this.sonarClient.searchForEpisodes(data.id);
+                            await ctx.reply("Trying to download the last season");
+                        } else {
+                            await ctx.reply(`Something went wrong: ${err}`);
+                        }
                     });
                 }
             }
@@ -179,11 +215,11 @@ export class TrashBot {
                 await ctx.reply(`Searching for ${ctx.message.text}`);
 
                 this.sonarClient.searchApi(ctx.message.text, async (data: SonarSearchResult[]) => {
-                    let buttons = data.slice(0,20).map((show) => {
+                    let buttons = data.slice(0, 20).map((show) => {
                         this.showCache.put(show.tvdbId, show);
                         return [Markup.button.callback(`${show.title} (${show.year}) (${show.network})`, `show_${show.tvdbId}`)];
                     });
-                    await ctx.replyWithMarkdown(`Here are the first 20 of ${data.length} results.` ,Markup.inlineKeyboard(buttons));
+                    await ctx.replyWithMarkdown(`Here are the first 20 of ${data.length} results.`, Markup.inlineKeyboard(buttons));
                 });
             }
         });
