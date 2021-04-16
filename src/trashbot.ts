@@ -199,7 +199,7 @@ export class TrashBot {
         if (message !== undefined) {
             let chatId = message.chat.id;
             if (this.myDb[chatId] === undefined) {
-                this.myDb[chatId] = {words: [], opts: {memes: true, readOnlyUsers: []}};
+                this.myDb[chatId] = {words: [], opts: {memes: true, readOnlyUsers: [], allUsers: []}};
             } else {
                 this.myDb[chatId].opts.memes = !this.myDb[chatId].opts.memes;
             }
