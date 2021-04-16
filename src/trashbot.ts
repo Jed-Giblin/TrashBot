@@ -18,7 +18,8 @@ interface ClientOpts {
     words: string[],
     opts: {
         memes: boolean
-        readOnlyUsers: number[]
+        readOnlyUsers: number[],
+        allUsers: number[]
     }
 }
 
@@ -84,6 +85,20 @@ export class TrashBot {
         });
         this.bot.command('newword', this.newWordCallback.bind(this));
         this.bot.command('/meme', this.memeCallback.bind(this));
+        this.bot.command('/joinall', async (ctx: Context) => {
+           let message = ctx.message;
+           if (message != undefined ) {
+               let author = message.from.id;
+               let chat = message.chat.id;
+               if ( this.myDb[chat] !== undefined ) {
+                   let opts = this.myDb[chat];
+                   if ( typeof(opts.opts.allUsers) === 'undefined' ) {
+                       opts.opts.allUsers = [];
+                   }
+                   opts.opts.allUsers.push(author);
+               }
+           }
+        });
         this.bot.command('/shows', async (ctx: Context) => {
             if (ctx.chat?.type !== 'private') {
                 await TrashBot.errorPrivateOnly(ctx);
@@ -202,7 +217,7 @@ export class TrashBot {
                 let realWord = realWords.join(" ");
                 let chatid = message.chat.id;
                 if (this.myDb[chatid] === undefined) {
-                    this.myDb[chatid] = {words: [], opts: {memes: false, readOnlyUsers: []}};
+                    this.myDb[chatid] = {words: [], opts: {memes: false, readOnlyUsers: [], allUsers: []}};
                     this.myDb[chatid].words.push(`.*${realWord.toLowerCase()}.*`);
                     ctx.reply(`Added a new trigger word: ${realWord}`);
                 } else {
