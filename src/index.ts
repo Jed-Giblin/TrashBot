@@ -38,7 +38,7 @@ tbot.bot.on('message', (ctx: Context) => {
                     return;
                 }
                 for (let i = 0; i < tbot.myDb[chatid].words.length; i++) {
-                    let r = new RegExp(tbot.myDb[chatid].words[i]);
+                    let r = new RegExp(`\\b${tbot.myDb[chatid].words[i]}\\b`);
                     if (r.test(msgText.toLowerCase())) {
                         if (tbot.myDb[chatid].opts.memes) {
                             tbot.sendMeme(ctx, chatid, message.message_id);
