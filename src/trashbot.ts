@@ -127,7 +127,7 @@ export class TrashBot {
                     if ( opts.opts.allUsers.length > 0 ) {
                         let mentions: string[] = [];
                         opts.opts.allUsers.forEach((id: number) => {
-                           mentions.push(`[](tg://user?id=${id})`)
+                           mentions.push(`[test](tg://user?id=${id})`)
                         });
                         ctx.replyWithMarkdown(mentions.join(''), {reply_to_message_id: message.message_id, parse_mode: "Markdown"})
                     }
@@ -254,10 +254,10 @@ export class TrashBot {
                 let chatid = message.chat.id;
                 if (this.myDb[chatid] === undefined) {
                     this.myDb[chatid] = {words: [], opts: {memes: false, readOnlyUsers: [], allUsers: []}};
-                    this.myDb[chatid].words.push(`.*${realWord.toLowerCase()}.*`);
+                    this.myDb[chatid].words.push(` ${realWord.toLowerCase()} `);
                     ctx.reply(`Added a new trigger word: ${realWord}`);
                 } else {
-                    this.myDb[chatid].words.push(`.*${realWord.toLowerCase()}.*`);
+                    this.myDb[chatid].words.push(` ${realWord.toLowerCase()} `);
                     ctx.reply(`Added a new trigger word: ${realWord}`);
                 }
             } else {
