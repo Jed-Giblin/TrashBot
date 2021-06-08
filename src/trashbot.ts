@@ -254,10 +254,10 @@ export class TrashBot {
                 let chatid = message.chat.id;
                 if (this.myDb[chatid] === undefined) {
                     this.myDb[chatid] = {words: [], opts: {memes: false, readOnlyUsers: [], allUsers: []}};
-                    this.myDb[chatid].words.push(` ${realWord.toLowerCase()} `);
+                    this.myDb[chatid].words.push(`${realWord.toLowerCase()}`);
                     ctx.reply(`Added a new trigger word: ${realWord}`);
                 } else {
-                    this.myDb[chatid].words.push(` ${realWord.toLowerCase()} `);
+                    this.myDb[chatid].words.push(`${realWord.toLowerCase()}`);
                     ctx.reply(`Added a new trigger word: ${realWord}`);
                 }
             } else {
