@@ -127,7 +127,7 @@ export class TrashBot {
                     if ( opts.opts.allUsers.length > 0 ) {
                         let mentions: string[] = [];
                         opts.opts.allUsers.forEach((id: number) => {
-                           mentions.push(`[test](tg://user?id=${id})`)
+                           mentions.push(`[test](tg://user?id=${id}) `)
                         });
                         ctx.replyWithMarkdown(mentions.join(''), {reply_to_message_id: message.message_id, parse_mode: "Markdown"})
                     }
