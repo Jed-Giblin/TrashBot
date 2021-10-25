@@ -3,7 +3,7 @@ import {Markup, Scenes, Telegraf, Context} from 'telegraf'
 import {InlineKeyboardMarkup} from "telegraf/src/telegram-types";
 import TelegrafStatelessQuestion from "telegraf-stateless-question";
 import {ReplyToMessageContext} from "telegraf-stateless-question/dist/source/identifier";
-import {AddShowResult, SonarrClient, SonarSearchResult} from "./sonarr";
+import {AddShowResult, SonarManagedShowListResult, SonarrClient, SonarSearchResult} from "./sonarr";
 import {LruCache} from "./cache";
 
 const DEFAULT_OPTS = {defaultMemes: false, sonarApiKey: undefined, radarApiKey: undefined};
@@ -32,6 +32,7 @@ export class TrashBot {
     myDb: Db;
     bot: Telegraf<Context>;
     showQueryQuestion: TelegrafStatelessQuestion<Context>;
+    showCleanupQuestion: TelegrafStatelessQuestion<Context>;
     showCache: LruCache<SonarSearchResult> = new LruCache<SonarSearchResult>();
     sonarClient: SonarrClient;
 
@@ -53,6 +54,7 @@ export class TrashBot {
             this.myDb = {};
         }
         this.showQueryQuestion = this.showQueryQuestionGen();
+        this.showCleanupQuestion = this.showCleanupQuestionGen();
         this.bot = new Telegraf<Context>(apiKey);
         this.initCommands();
     }
@@ -97,6 +99,13 @@ export class TrashBot {
                     }
                     opts.opts.allUsers.push(author);
                 }
+            }
+        });
+
+        this.bot.command('/remindme', async(ctx: Context) => {
+            let message = ctx.message;
+            if ( message != undefined ) {
+
             }
         });
 
@@ -147,6 +156,28 @@ export class TrashBot {
         });
 
         /**
+         * This handler runs when a user clicks a show name from the list of choices returned from a cleanup search
+         */
+        this.bot.action(/clean_show_(.*)/, async (localCtx) => {
+            if ('match' in localCtx) {
+                let showId = localCtx.match[1].trim();
+                let show = this.showCache.get(Number(showId));
+                if (show) {
+                    if (show.remotePoster) {
+                        await localCtx.replyWithPhoto(show.remotePoster);
+                    }
+                    let showDetails = `${show.title} (${show.year}) (${show.network})`;
+                    await localCtx.replyWithMarkdown(showDetails, Markup.inlineKeyboard([
+                        Markup.button.callback('Click here to clean up', `confirm_clean_${show.id}`)
+                    ]));
+                    await localCtx.answerCbQuery();
+                } else {
+                    console.log(`Show ${showId} wasn't cached`);
+                }
+            }
+        });
+
+        /**
          * This handler runs when a user clicks a show name from the list of choices returned from a search
          */
         this.bot.action(/show_(.*)/, async (localCtx) => {
@@ -169,6 +200,8 @@ export class TrashBot {
                 }
             }
         });
+
+
 
         /**
          * This handler runs when a user clicks the button
@@ -193,6 +226,30 @@ export class TrashBot {
         });
 
         /**
+         * This handler runs when a user clicks confirm clean
+         */
+        this.bot.action(/confirm_clean_(.*)/, async (ctx) => {
+            if ('match' in ctx) {
+                let showId = ctx.match[1];
+                let show = this.showCache.get(Number(showId));
+                if (show) {
+                    await ctx.answerCbQuery();
+                    await ctx.reply("Cleaning Show");
+                    this.sonarClient.cleanShow(show, async (err, data: SonarSearchResult) => {
+                        if (!err) {
+                            await this.sonarClient.cleanFiles(data, async (deleted) => {
+                                await ctx.reply(`Deleted ${deleted / 1000000} Gb of space`);
+                            });
+                            await ctx.reply("Cleaning up the seasons");
+                        } else {
+                            await ctx.reply(`Something went wrong: ${err}`);
+                        }
+                    });
+                }
+            }
+        });
+
+        /**
          * This handler runs when the user clicks the "Add Show" button in response to action choice prompt
          */
         this.bot.action('add_show', async (ctx: Context) => {
@@ -200,12 +257,19 @@ export class TrashBot {
             await ctx.answerCbQuery();
         });
 
+        this.bot.action('clean_up_show', async(ctx: Context) => {
+           await this.showCleanupQuestion.replyWithMarkdown(ctx, "Please type the name of the show you want to clean up");
+           await ctx.answerCbQuery();
+        });
+
         this.bot.use(this.showQueryQuestion.middleware());
+        this.bot.use(this.showCleanupQuestion.middleware());
     }
 
     showManagerOptions() {
         return Markup.inlineKeyboard([
-            Markup.button.callback('Add Show', 'add_show')
+            Markup.button.callback('Add Show', 'add_show'),
+            Markup.button.callback('Clean up show', 'clean_up_show')
         ])
     }
 
@@ -218,6 +282,27 @@ export class TrashBot {
                     let buttons = data.slice(0, 20).map((show) => {
                         this.showCache.put(show.tvdbId, show);
                         return [Markup.button.callback(`${show.title} (${show.year}) (${show.network})`, `show_${show.tvdbId}`)];
+                    });
+                    await ctx.replyWithMarkdown(`Here are the first 20 of ${data.length} results.`, Markup.inlineKeyboard(buttons));
+                });
+            }
+        });
+    }
+
+    showCleanupQuestionGen() {
+        return new TelegrafStatelessQuestion<Context>('show_cleanup', async (ctx: ReplyToMessageContext<Context>, additionalState: string) => {
+            if ('text' in ctx.message) {
+                await ctx.reply(`Looking for ${ctx.message.text} to cleanup`);
+                let term = ctx.message.text;
+                this.sonarClient.searchShows(async (data: SonarManagedShowListResult[]) => {
+                    let buttons = data.map((show) => {
+                        console.log(`${show.title} lookup ${term}`);
+                        if ( show.title.toUpperCase().match(term.toUpperCase())) {
+                            this.showCache.put(show.id, show);
+                            return [Markup.button.callback(`${show.title}) (${show.network})`, `clean_show_${show.id}`)];
+                        } else {
+                            return []
+                        }
                     });
                     await ctx.replyWithMarkdown(`Here are the first 20 of ${data.length} results.`, Markup.inlineKeyboard(buttons));
                 });
