@@ -61,6 +61,10 @@ export interface AddShowResult {
     seasons: SeriesSeason[]
 }
 
+interface MappedSeasons {
+    [key: string]: SeriesSeason
+}
+
 export class SonarrClient {
     private readonly ip: string;
     private readonly apiKey: string;
@@ -122,9 +126,18 @@ export class SonarrClient {
         });
     }
 
+    seasonReducer(map: MappedSeasons, season: SeriesSeason) {
+        map[season.seasonNumber.toString()] = season;
+        return map;
+    }
+
     cleanFiles(show: SonarSearchResult, cb: (deleted: number) => any) {
         let options = this.options();
         options.path = encodeURI(`/api/episodefile?seriesId=${show.id}&apiKey=${this.apiKey}`);
+        let mappedSeasons = new Map();
+        show.seasons.forEach((season) => {
+            mappedSeasons.set(season.seasonNumber.toString(), season);
+        });
         https.get(options, (resp) => {
             let data = '';
             resp.on('data', (chunk) => {
@@ -133,12 +146,8 @@ export class SonarrClient {
             resp.on('end', () => {
                 let episodes: SonarEpisode[] = JSON.parse(data);
                 let totalDeleted = 0;
-                let modifier = 0;
-                if ( episodes[0].seasonNumber != 0 ) {
-                    modifier = 1;
-                }
                 episodes.forEach((episode) => {
-                    if (!show.seasons[episode.seasonNumber - modifier].monitored) {
+                    if ( !mappedSeasons.get(episode.seasonNumber).monitored) {
                         this.deleteFile(episode.id);
                         totalDeleted += episode.size;
                     }
