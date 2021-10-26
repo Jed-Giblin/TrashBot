@@ -147,7 +147,7 @@ export class SonarrClient {
                 let episodes: SonarEpisode[] = JSON.parse(data);
                 let totalDeleted = 0;
                 episodes.forEach((episode) => {
-                    if ( !mappedSeasons.get(episode.seasonNumber).monitored) {
+                    if ( !mappedSeasons.get(episode.seasonNumber.toString()).monitored) {
                         this.deleteFile(episode.id);
                         totalDeleted += episode.size;
                     }
