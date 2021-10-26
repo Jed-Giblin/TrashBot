@@ -238,7 +238,7 @@ export class TrashBot {
                     this.sonarClient.cleanShow(show, async (err, data: SonarSearchResult) => {
                         if (!err) {
                             await this.sonarClient.cleanFiles(data, async (deleted) => {
-                                await ctx.reply(`Deleted ${deleted / 1000000} Gb of space`);
+                                await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
                             });
                             await ctx.reply("Cleaning up the seasons");
                         } else {

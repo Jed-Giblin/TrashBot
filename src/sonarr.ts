@@ -77,9 +77,10 @@ export class SonarrClient {
             this.password = password;
         }
     }
+
     options(): https.RequestOptions {
         let options: https.RequestOptions = {}
-        if ( this.auth ) {
+        if (this.auth) {
             options.headers = {
                 'Authorization': 'Basic ' + Buffer.from(this.username + ':' + this.password).toString('base64')
             }
@@ -105,7 +106,7 @@ export class SonarrClient {
         });
     }
 
-    searchShows( cb: (data: any) => any) {
+    searchShows(cb: (data: any) => any) {
         let options = this.options();
         options.path = encodeURI(`/api/series?apiKey=${this.apiKey}`);
         https.get(options, (resp) => {
@@ -132,11 +133,15 @@ export class SonarrClient {
             resp.on('end', () => {
                 let episodes: SonarEpisode[] = JSON.parse(data);
                 let totalDeleted = 0;
+                let modifier = 0;
+                if ( episodes[0].seasonNumber != 0 ) {
+                    modifier = 1;
+                }
                 episodes.forEach((episode) => {
-                   if ( !show.seasons[episode.seasonNumber - 1].monitored ) {
-                       this.deleteFile(episode.id);
-                       totalDeleted += episode.size;
-                   }
+                    if (!show.seasons[episode.seasonNumber - modifier].monitored) {
+                        this.deleteFile(episode.id);
+                        totalDeleted += episode.size;
+                    }
                 });
                 cb(totalDeleted);
             });
@@ -150,32 +155,33 @@ export class SonarrClient {
         options.path = encodeURI(`/api/episodefile/${episodeId}?apiKey=${this.apiKey}`);
         options.method = 'DELETE';
 
-        let req = https.request(options,res => {});
+        let req = https.request(options, res => {
+        });
         req.end();
     }
 
-    cleanShow(show:SonarSearchResult, cb: (err: Error|undefined, data: any) => any) {
-        show.seasons =  show.seasons.sort( (a,b) => {
-            return  ( a.seasonNumber > b.seasonNumber ? 1 : -1 )
-        }).map( (s, i) => {
-            if ( i !== show.seasons.length -1 ) {
+    cleanShow(show: SonarSearchResult, cb: (err: Error | undefined, data: any) => any) {
+        show.seasons = show.seasons.sort((a, b) => {
+            return (a.seasonNumber > b.seasonNumber ? 1 : -1)
+        }).map((s, i) => {
+            if (i !== show.seasons.length - 1) {
                 s.monitored = false;
             }
             return s;
         });
         let options = this.options()
-        options.path  = `/api/series/${show.id}?apiKey=${this.apiKey}`;
+        options.path = `/api/series/${show.id}?apiKey=${this.apiKey}`;
         options.method = 'PUT';
 
-        let req = https.request(options,res => {
+        let req = https.request(options, res => {
             console.log(`statusCode while PUTTING show: ${res.statusCode}`);
             let resp = '';
             res.on('data', d => {
                 resp += d;
             });
             res.on('end', () => {
-                if ( res.statusCode ) {
-                    if ( res.statusCode >= 400 ) {
+                if (res.statusCode) {
+                    if (res.statusCode >= 400) {
                         cb(Error(res.statusCode.toString()), undefined);
                     } else {
                         cb(undefined, show);
@@ -194,14 +200,14 @@ export class SonarrClient {
         req.end();
     }
 
-    addShow(show:SonarSearchResult, cb: (err: Error|undefined, data: any) => any) {
-        let seasons = show.seasons.sort( (a,b) => {
-            return  ( a.seasonNumber > b.seasonNumber ? 1 : -1 )
-        }).map( (s, i) => {
-           if ( i !== show.seasons.length -1 ) {
-               s.monitored = false;
-           }
-           return s;
+    addShow(show: SonarSearchResult, cb: (err: Error | undefined, data: any) => any) {
+        let seasons = show.seasons.sort((a, b) => {
+            return (a.seasonNumber > b.seasonNumber ? 1 : -1)
+        }).map((s, i) => {
+            if (i !== show.seasons.length - 1) {
+                s.monitored = false;
+            }
+            return s;
         });
 
         let body: object = {
@@ -211,18 +217,18 @@ export class SonarrClient {
         }
 
         let options = this.options()
-        options.path  = `/api/series?apiKey=${this.apiKey}`;
+        options.path = `/api/series?apiKey=${this.apiKey}`;
         options.method = 'POST';
 
-        let req = https.request(options,res => {
+        let req = https.request(options, res => {
             console.log(`statusCode while adding show: ${res.statusCode}`);
             let resp = '';
             res.on('data', d => {
                 resp += d;
             });
             res.on('end', () => {
-                if ( res.statusCode ) {
-                    if ( res.statusCode >= 400 ) {
+                if (res.statusCode) {
+                    if (res.statusCode >= 400) {
                         cb(Error(res.statusCode.toString()), undefined);
                     } else {
                         cb(undefined, JSON.parse(resp));
