@@ -218,12 +218,13 @@ export class SonarrClient {
             }
             return s;
         });
+        console.log(show.seasons);
 
         let body: object = {
             tvDbId: show.tvdbId, title: show.title, profileId: 1,
             titleSlug: show.titleSlug, images: show.images, seasons: seasons,
-            RootFolderPath: '/tv', seasonFolder: true
-        }
+            RootFolderPath: '/tv', seasonFolder: true, addOptions: { ignoreEpisodesWithoutFiles: false, ignoreEpisodesWithFiles: false }
+        };
 
         let options = this.options()
         options.path = `/api/series?apiKey=${this.apiKey}`;
@@ -238,6 +239,7 @@ export class SonarrClient {
             res.on('end', () => {
                 if (res.statusCode) {
                     if (res.statusCode >= 400) {
+                        console.log(resp);
                         cb(Error(res.statusCode.toString()), undefined);
                     } else {
                         cb(undefined, JSON.parse(resp));
