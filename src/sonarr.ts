@@ -100,7 +100,7 @@ export class SonarrClient {
 
     searchApi(term: string, cb: (data: any) => any) {
         let options = this.options();
-        options.path = encodeURI(`/api/tag?term=${term}&apiKey=${this.apiKey}`);
+        options.path = encodeURI(`/api/series/lookup?term=${term}&apiKey=${this.apiKey}`);
 
         https.get(options, (resp) => {
             let data = '';
