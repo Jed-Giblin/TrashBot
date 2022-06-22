@@ -230,27 +230,34 @@ export class SonarrClient {
         req.end();
     }
 
-    addShow(show: SonarSearchResult, chatId: number, cb: (err: Error | undefined, data: any) => any) {
-        let seasons = show.seasons.sort((a, b) => {
-            return (a.seasonNumber > b.seasonNumber ? 1 : -1)
-        }).map((s, i) => {
-            if (i !== show.seasons.length - 1) {
-                s.monitored = false;
-            }
-            return s;
-        });
-        console.log(show.seasons);
+    async createTag(tagValue: string, cb: (data: any) => any) {
+        let options = this.options();
+        options.path = encodeURI(`/api/tag?apikey=${this.apiKey}`);
+        options.method = 'POST';
 
-        let showTags: number[] = [];
-        this.searchTags((tags => {
-            console.log(tags);
-            tags.forEach((tag: Tag) => {
-                if (tag.label === chatId.toString()) {
-                    showTags.push(tag.id)
+        let req = https.request(options, res => {
+            console.log(`statusCode while creating tag: ${res.statusCode}`);
+            let resp = '';
+            res.on('data', d => {
+                resp += d;
+            });
+            res.on('end', () => {
+                if (res.statusCode) {
+                    if (res.statusCode === 200) {
+                        cb(JSON.parse(resp))
+                    }
                 }
-            })
-        }));
+            });
+        });
+        let body: object = {
+            label: tagValue
+        }
 
+        req.write(JSON.stringify(body));
+        req.end();
+    }
+
+    addShowWithTags(show: SonarSearchResult, seasons: SeriesSeason[], showTags: number[], cb: (err: Error | undefined, data: any) => any) {
         let body: object = {
             tvDbId: show.tvdbId,
             title: show.title,
@@ -294,6 +301,37 @@ export class SonarrClient {
 
         req.write(JSON.stringify(body));
         req.end();
+    }
+
+    addShow(show: SonarSearchResult, chatId: number, cb: (err: Error | undefined, data: any) => any) {
+        let seasons = show.seasons.sort((a, b) => {
+            return (a.seasonNumber > b.seasonNumber ? 1 : -1)
+        }).map((s, i) => {
+            if (i !== show.seasons.length - 1) {
+                s.monitored = false;
+            }
+            return s;
+        });
+
+        let showTags: number[] = [];
+        this.searchTags((tags) => {
+            console.log(tags);
+            for (let i = 0; i <= tags.length; i++) {
+                let tag = tags[i];
+                if (tag.label === chatId.toString()) {
+                    showTags.push(tag.id);
+                    break;
+                }
+            }
+
+            if (showTags.length > 0) {
+                this.addShowWithTags(show, seasons, showTags, cb);
+            } else {
+                this.createTag(chatId.toString(), (newTag: Tag) => {
+                    this.addShowWithTags(show, seasons, [newTag.id], cb);
+                });
+            }
+        });
     }
 
     async searchForEpisodes(seriesID: number) {
