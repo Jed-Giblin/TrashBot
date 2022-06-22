@@ -124,6 +124,7 @@ export class SonarrClient {
                 data += chunk;
             });
             resp.on('end', () => {
+                console.log(`End searchTags: ${data}`);
                 cb(JSON.parse(data));
             });
         }).on("error", (err) => {
@@ -230,7 +231,7 @@ export class SonarrClient {
         req.end();
     }
 
-    async createTag(tagValue: string, cb: (data: any) => any) {
+    createTag(tagValue: string, cb: (data: any) => any) {
         let options = this.options();
         options.path = encodeURI(`/api/tag?apikey=${this.apiKey}`);
         options.method = 'POST';
@@ -318,6 +319,7 @@ export class SonarrClient {
             console.log(tags);
             for (let i = 0; i <= tags.length; i++) {
                 let tag = tags[i];
+                console.log(tag);
                 if (tag.label === chatId.toString()) {
                     showTags.push(tag.id);
                     break;
