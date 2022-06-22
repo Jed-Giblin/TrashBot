@@ -317,7 +317,7 @@ export class SonarrClient {
         let showTags: number[] = [];
         this.searchTags((tags) => {
             console.log(tags);
-            for (let i = 0; i <= tags.length; i++) {
+            for (let i = 0; i < tags.length; i++) {
                 let tag = tags[i];
                 console.log(tag);
                 if (tag.label === chatId.toString()) {
