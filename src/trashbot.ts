@@ -102,9 +102,9 @@ export class TrashBot {
             }
         });
 
-        this.bot.command('/remindme', async(ctx: Context) => {
+        this.bot.command('/remindme', async (ctx: Context) => {
             let message = ctx.message;
-            if ( message != undefined ) {
+            if (message != undefined) {
 
             }
         });
@@ -133,12 +133,15 @@ export class TrashBot {
                 let chat = message.chat.id;
                 if (this.myDb[chat] !== undefined) {
                     let opts = this.myDb[chat];
-                    if ( opts.opts.allUsers.length > 0 ) {
+                    if (opts.opts.allUsers.length > 0) {
                         let mentions: string[] = [];
                         opts.opts.allUsers.forEach((id: number) => {
-                           mentions.push(`[test](tg://user?id=${id}) `)
+                            mentions.push(`[test](tg://user?id=${id}) `)
                         });
-                        ctx.replyWithMarkdown(mentions.join(''), {reply_to_message_id: message.message_id, parse_mode: "Markdown"})
+                        ctx.replyWithMarkdown(mentions.join(''), {
+                            reply_to_message_id: message.message_id,
+                            parse_mode: "Markdown"
+                        })
                     }
                 }
             }
@@ -202,7 +205,6 @@ export class TrashBot {
         });
 
 
-
         /**
          * This handler runs when a user clicks the button
          */
@@ -213,7 +215,10 @@ export class TrashBot {
                 if (show) {
                     await ctx.answerCbQuery();
                     await ctx.reply("Adding show!");
-                    this.sonarClient.addShow(show, async (err, data: AddShowResult) => {
+                    if (!ctx.chat) {
+                        return
+                    }
+                    this.sonarClient.addShow(show, ctx.chat.id, async (err, data: AddShowResult) => {
                         if (!err) {
                             await this.sonarClient.searchForEpisodes(data.id);
                             await ctx.reply("Trying to download the last season");
@@ -257,9 +262,9 @@ export class TrashBot {
             await ctx.answerCbQuery();
         });
 
-        this.bot.action('clean_up_show', async(ctx: Context) => {
-           await this.showCleanupQuestion.replyWithMarkdown(ctx, "Please type the name of the show you want to clean up");
-           await ctx.answerCbQuery();
+        this.bot.action('clean_up_show', async (ctx: Context) => {
+            await this.showCleanupQuestion.replyWithMarkdown(ctx, "Please type the name of the show you want to clean up");
+            await ctx.answerCbQuery();
         });
 
         this.bot.use(this.showQueryQuestion.middleware());
@@ -297,7 +302,7 @@ export class TrashBot {
                 this.sonarClient.searchShows(async (data: SonarManagedShowListResult[]) => {
                     let buttons = data.map((show) => {
                         console.log(`${show.title} lookup ${term}`);
-                        if ( show.title.toUpperCase().match(term.toUpperCase())) {
+                        if (show.title.toUpperCase().match(term.toUpperCase())) {
                             this.showCache.put(show.id, show);
                             return [Markup.button.callback(`${show.title}) (${show.network})`, `clean_show_${show.id}`)];
                         } else {

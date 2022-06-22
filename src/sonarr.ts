@@ -55,6 +55,11 @@ export interface SonarEpisode {
     id: number
 }
 
+interface Tag {
+    label: string,
+    id: number
+}
+
 export interface AddShowResult {
     id: number,
     monitored: boolean,
@@ -95,8 +100,24 @@ export class SonarrClient {
 
     searchApi(term: string, cb: (data: any) => any) {
         let options = this.options();
-        options.path = encodeURI(`/api/series/lookup?term=${term}&apiKey=${this.apiKey}`);
+        options.path = encodeURI(`/api/tag?term=${term}&apiKey=${this.apiKey}`);
 
+        https.get(options, (resp) => {
+            let data = '';
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => {
+                cb(JSON.parse(data));
+            });
+        }).on("error", (err) => {
+            console.log("Error: " + err.message);
+        });
+    }
+
+    searchTags(cb: (data: any) => any) {
+        let options = this.options();
+        options.path = encodeURI(`/api/tag`);
         https.get(options, (resp) => {
             let data = '';
             resp.on('data', (chunk) => {
@@ -147,7 +168,7 @@ export class SonarrClient {
                 let episodes: SonarEpisode[] = JSON.parse(data);
                 let totalDeleted = 0;
                 episodes.forEach((episode) => {
-                    if ( !mappedSeasons.get(episode.seasonNumber.toString()).monitored) {
+                    if (!mappedSeasons.get(episode.seasonNumber.toString()).monitored) {
                         this.deleteFile(episode.id);
                         totalDeleted += episode.size;
                     }
@@ -209,7 +230,7 @@ export class SonarrClient {
         req.end();
     }
 
-    addShow(show: SonarSearchResult, cb: (err: Error | undefined, data: any) => any) {
+    addShow(show: SonarSearchResult, chatId: number, cb: (err: Error | undefined, data: any) => any) {
         let seasons = show.seasons.sort((a, b) => {
             return (a.seasonNumber > b.seasonNumber ? 1 : -1)
         }).map((s, i) => {
@@ -220,10 +241,26 @@ export class SonarrClient {
         });
         console.log(show.seasons);
 
+        let showTags: number[] = [];
+        this.searchTags((tags => {
+            tags.forEach((tag: Tag) => {
+                if (tag.label === chatId.toString()) {
+                    showTags.push(tag.id)
+                }
+            })
+        }));
+
         let body: object = {
-            tvDbId: show.tvdbId, title: show.title, profileId: 1,
-            titleSlug: show.titleSlug, images: show.images, seasons: seasons,
-            RootFolderPath: '/tv', seasonFolder: true, addOptions: { ignoreEpisodesWithoutFiles: false, ignoreEpisodesWithFiles: false }
+            tvDbId: show.tvdbId,
+            title: show.title,
+            profileId: 1,
+            titleSlug: show.titleSlug,
+            images: show.images,
+            seasons: seasons,
+            RootFolderPath: '/tv',
+            seasonFolder: true,
+            tags: showTags,
+            addOptions: {ignoreEpisodesWithoutFiles: false, ignoreEpisodesWithFiles: false}
         };
 
         let options = this.options()
