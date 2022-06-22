@@ -251,7 +251,7 @@ export class SonarrClient {
             });
         });
         let body: object = {
-            label: tagValue
+            label: `tg:${tagValue}`
         }
 
         req.write(JSON.stringify(body));
@@ -320,7 +320,7 @@ export class SonarrClient {
             for (let i = 0; i < tags.length; i++) {
                 let tag = tags[i];
                 console.log(tag);
-                if (tag.label === chatId.toString()) {
+                if (tag.label === `tg:${chatId.toString()}`) {
                     showTags.push(tag.id);
                     break;
                 }
