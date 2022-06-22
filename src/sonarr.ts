@@ -117,7 +117,7 @@ export class SonarrClient {
 
     searchTags(cb: (data: any) => any) {
         let options = this.options();
-        options.path = encodeURI(`/api/tag`);
+        options.path = encodeURI(`/api/tag?apikey=${this.apiKey}`);
         https.get(options, (resp) => {
             let data = '';
             resp.on('data', (chunk) => {
