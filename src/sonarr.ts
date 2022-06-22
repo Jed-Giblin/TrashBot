@@ -243,6 +243,7 @@ export class SonarrClient {
 
         let showTags: number[] = [];
         this.searchTags((tags => {
+            console.log(tags);
             tags.forEach((tag: Tag) => {
                 if (tag.label === chatId.toString()) {
                     showTags.push(tag.id)
