@@ -244,7 +244,7 @@ export class SonarrClient {
             });
             res.on('end', () => {
                 if (res.statusCode) {
-                    if (res.statusCode === 200) {
+                    if (res.statusCode === 200 || res.statusCode === 201) {
                         cb(JSON.parse(resp))
                     }
                 }
