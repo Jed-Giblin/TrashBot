@@ -259,10 +259,13 @@ export class TrashBot {
                                             console.log("Properly found the tag Value")
                                             let chatId = tagToUse.label.split(':')[1];
                                             if ( chatId ) {
+                                                console.log(`Found the chatID: ${chatId}`)
                                                 if ( message != undefined) {
+                                                    console.log('Message is defined')
                                                     // @ts-ignore
                                                     let author = message.from.username;
                                                     let body = `${data.title} is being cleaned up by ${author}`
+                                                    console.log(body);
                                                     await this.bot.telegram.sendMessage(chatId, body);
                                                     await this.sonarClient.cleanFiles(data, async (deleted) => {
                                                         await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
