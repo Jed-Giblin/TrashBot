@@ -3,7 +3,7 @@ import {Markup, Scenes, Telegraf, Context} from 'telegraf'
 import {InlineKeyboardMarkup} from "telegraf/src/telegram-types";
 import TelegrafStatelessQuestion from "telegraf-stateless-question";
 import {ReplyToMessageContext} from "telegraf-stateless-question/dist/source/identifier";
-import {AddShowResult, SonarManagedShowListResult, SonarrClient, SonarSearchResult} from "./sonarr";
+import {AddShowResult, SonarManagedShowListResult, SonarrClient, SonarSearchResult, Tag} from "./sonarr";
 import {LruCache} from "./cache";
 
 const DEFAULT_OPTS = {defaultMemes: false, sonarApiKey: undefined, radarApiKey: undefined};
@@ -237,15 +237,41 @@ export class TrashBot {
             if ('match' in ctx) {
                 let showId = ctx.match[1];
                 let show = this.showCache.get(Number(showId));
+                let message = ctx.message;
                 if (show) {
                     await ctx.answerCbQuery();
                     await ctx.reply("Cleaning Show");
                     this.sonarClient.cleanShow(show, async (err, data: SonarSearchResult) => {
                         if (!err) {
-                            await this.sonarClient.cleanFiles(data, async (deleted) => {
-                                await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
+                            this.sonarClient.searchTags(async (tagList: Tag[]) => {
+                                let tagIdList = tagList.map( (t) => {
+                                    if ( t.label.startsWith('tg:')) {
+                                        return t.id;
+                                    }
+                                });
+                                for ( let i = 0; i <= data.tags.length; i++ ) {
+                                    let existingShowTag = data.tags[i];
+                                    if ( tagIdList.indexOf(existingShowTag) > -1 ) {
+                                        // The tag exists, notify user.
+                                        let tagToUse = tagList.filter(t => t.id === existingShowTag ).shift();
+                                        if ( tagToUse ) {
+                                            let chatId = tagToUse.label.split(':')[1];
+                                            if ( chatId ) {
+                                                if ( message != undefined) {
+                                                    // @ts-ignore
+                                                    let author = message.from.username;
+                                                    let body = `${data.title} is being cleaned up by ${author}`
+                                                    await this.bot.telegram.sendMessage(chatId, body);
+                                                    await this.sonarClient.cleanFiles(data, async (deleted) => {
+                                                        await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
+                                                    });
+                                                    await ctx.reply("Cleaning up the seasons");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             });
-                            await ctx.reply("Cleaning up the seasons");
                         } else {
                             await ctx.reply(`Something went wrong: ${err}`);
                         }

@@ -21,6 +21,7 @@ export interface SonarSearchResult {
     remotePoster: string,
     seasons: SeriesSeason[],
     year: number,
+    tags: number[],
     profileId: number,
     tvdbId: number,
     tvRageId: number,
@@ -55,7 +56,7 @@ export interface SonarEpisode {
     id: number
 }
 
-interface Tag {
+export interface Tag {
     label: string,
     id: number
 }
