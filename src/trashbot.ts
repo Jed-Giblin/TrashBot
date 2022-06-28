@@ -240,7 +240,11 @@ export class TrashBot {
                 let author = ctx.from;
                 let authorName = 'Someone in chat'
                 if (  author !== undefined ) {
-                    authorName = `${author.username}`;
+                    if ( author.username !== undefined ) {
+                        authorName = author.username;
+                    } else {
+                        authorName = author.first_name;
+                    }
                 }
                 if (show) {
                     await ctx.answerCbQuery();
