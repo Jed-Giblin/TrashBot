@@ -252,9 +252,11 @@ export class TrashBot {
                                 for ( let i = 0; i <= data.tags.length; i++ ) {
                                     let existingShowTag = data.tags[i];
                                     if ( tagIdList.indexOf(existingShowTag) > -1 ) {
+                                        console.log("Found a TG user tag on the show")
                                         // The tag exists, notify user.
                                         let tagToUse = tagList.filter(t => t.id === existingShowTag ).shift();
                                         if ( tagToUse ) {
+                                            console.log("Properly found the tag Value")
                                             let chatId = tagToUse.label.split(':')[1];
                                             if ( chatId ) {
                                                 if ( message != undefined) {
