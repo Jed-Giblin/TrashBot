@@ -43,6 +43,7 @@ export interface SonarManagedShowListResult {
     year: number,
     profileId: number,
     tvdbId: number,
+    tags: number[],
     tvRageId: number,
     tvMazeId: number,
     titleSlug: string,
