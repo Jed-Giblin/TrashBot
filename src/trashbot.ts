@@ -237,7 +237,11 @@ export class TrashBot {
             if ('match' in ctx) {
                 let showId = ctx.match[1];
                 let show = this.showCache.get(Number(showId));
-                let message = ctx.message;
+                let author = ctx.from;
+                let authorName = 'Someone in chat'
+                if (  author !== undefined ) {
+                    authorName = `${author.first_name} ${author.last_name}`;
+                }
                 if (show) {
                     await ctx.answerCbQuery();
                     await ctx.reply("Cleaning Show");
@@ -260,18 +264,16 @@ export class TrashBot {
                                             let chatId = tagToUse.label.split(':')[1];
                                             if ( chatId ) {
                                                 console.log(`Found the chatID: ${chatId}`)
-                                                if ( message != undefined) {
-                                                    console.log('Message is defined')
-                                                    // @ts-ignore
-                                                    let author = message.from.username;
-                                                    let body = `${data.title} is being cleaned up by ${author}`
-                                                    console.log(body);
-                                                    await this.bot.telegram.sendMessage(chatId, body);
-                                                    await this.sonarClient.cleanFiles(data, async (deleted) => {
-                                                        await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
-                                                    });
-                                                    await ctx.reply("Cleaning up the seasons");
-                                                }
+                                                console.log('Message is defined')
+                                                // @ts-ignore
+
+                                                let body = `${data.title} is being cleaned up by ${authorName}`
+                                                console.log(body);
+                                                await this.bot.telegram.sendMessage(chatId, body);
+                                                await this.sonarClient.cleanFiles(data, async (deleted) => {
+                                                    await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
+                                                });
+                                                await ctx.reply("Cleaning up the seasons");
                                             }
                                         }
                                     }
