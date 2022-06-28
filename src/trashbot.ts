@@ -313,7 +313,7 @@ export class TrashBot {
                    });
                    if ( userTag !== undefined ) {
                        this.sonarClient.searchShows(async (showList) => {
-                          for( let i = 0; i <= showList.length; i++ ) {
+                          for( let i = 0; i < showList.length; i++ ) {
                               let show = showList[i];
                               // @ts-ignore
                               if ( show.tags.includes(userTag.id) ) {
