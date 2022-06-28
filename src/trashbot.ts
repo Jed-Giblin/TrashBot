@@ -299,6 +299,42 @@ export class TrashBot {
             await ctx.answerCbQuery();
         });
 
+        this.bot.action('my_shows', async (ctx: Context) => {
+            let chat = ctx.chat;
+            let chatId = -1;
+            let userShows: string[] = [];
+            if ( chat !== undefined ) {
+                chatId = chat.id;
+            }
+            if ( chatId > 0 ) {
+                this.sonarClient.searchTags(async (tagList: Tag[]) => {
+                   let userTag = tagList.find((t) => {
+                       return t.label === `tg:${chatId}`;
+                   });
+                   if ( userTag !== undefined ) {
+                       this.sonarClient.searchShows(async (showList) => {
+                          for( let i = 0; i <= showList.length; i++ ) {
+                              let show = showList[i];
+                              // @ts-ignore
+                              if ( show.tags.includes(userTag.id) ) {
+                                  userShows.push(show.title);
+                              }
+                          }
+                          if ( userShows.length > 0 ) {
+                              await ctx.reply(userShows.join("\n"));
+                          } else {
+                              await ctx.reply("You have no current shows")
+                          }
+                       });
+                   } else {
+                       await ctx.reply("You have never added a show");
+                   }
+                });
+            } else {
+                await ctx.reply("Hmm. I something went wrong. This statement is false");
+            }
+        })
+
         this.bot.action('clean_up_show', async (ctx: Context) => {
             await this.showCleanupQuestion.replyWithMarkdown(ctx, "Please type the name of the show you want to clean up");
             await ctx.answerCbQuery();
@@ -311,7 +347,8 @@ export class TrashBot {
     showManagerOptions() {
         return Markup.inlineKeyboard([
             Markup.button.callback('Add Show', 'add_show'),
-            Markup.button.callback('Clean up show', 'clean_up_show')
+            Markup.button.callback('Clean up show', 'clean_up_show'),
+            Markup.button.callback('View my shows', 'my_shows')
         ])
     }
 
