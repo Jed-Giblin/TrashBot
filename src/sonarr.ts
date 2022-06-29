@@ -100,20 +100,22 @@ export class SonarrClient {
         return options;
     }
 
-    searchApi(term: string, cb: (data: any) => any) {
-        let options = this.options();
-        options.path = encodeURI(`/api/series/lookup?term=${term}&apiKey=${this.apiKey}`);
-
-        https.get(options, (resp) => {
-            let data = '';
-            resp.on('data', (chunk) => {
-                data += chunk;
+    searchApi(term: string): Promise<SonarSearchResult[]> {
+        return new Promise((resolve, reject) => {
+            let options = this.options();
+            options.path = encodeURI(`/api/series/lookup?term=${term}&apiKey=${this.apiKey}`);
+            https.get(options, (resp) => {
+                let data = '';
+                resp.on('data', (chunk) => {
+                    data += chunk;
+                });
+                resp.on('end', () => {
+                    resolve(JSON.parse(data));
+                });
+            }).on("error", (err) => {
+                console.log("Error: " + err.message);
+                reject(err.message);
             });
-            resp.on('end', () => {
-                cb(JSON.parse(data));
-            });
-        }).on("error", (err) => {
-            console.log("Error: " + err.message);
         });
     }
 

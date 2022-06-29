@@ -218,7 +218,7 @@ export class TrashBot {
                     if (!ctx.chat) {
                         return
                     }
-                    this.sonarClient.addShow(show, ctx.chat.id, async (err, data: AddShowResult) => {
+                    await this.sonarClient.addShow(show, ctx.chat.id, async (err, data: AddShowResult) => {
                         if (!err) {
                             await this.sonarClient.searchForEpisodes(data.id);
                             await ctx.reply("Trying to download the last season");
@@ -356,13 +356,16 @@ export class TrashBot {
             if ('text' in ctx.message) {
                 await ctx.reply(`Searching for ${ctx.message.text}`);
 
-                this.sonarClient.searchApi(ctx.message.text, async (data: SonarSearchResult[]) => {
+                try {
+                    let data = await this.sonarClient.searchApi(ctx.message.text);
                     let buttons = data.slice(0, 20).map((show) => {
                         this.showCache.put(show.tvdbId, show);
                         return [Markup.button.callback(`${show.title} (${show.year}) (${show.network})`, `show_${show.tvdbId}`)];
                     });
                     await ctx.replyWithMarkdown(`Here are the first 20 of ${data.length} results.`, Markup.inlineKeyboard(buttons));
-                });
+                } catch (e) {
+                    await ctx.reply(`Something went wrong while trying to to search for shows. ${e.toString()}`);
+                }
             }
         });
     }
