@@ -117,20 +117,23 @@ export class SonarrClient {
         });
     }
 
-    searchTags(cb: (data: any) => any) {
-        let options = this.options();
-        options.path = encodeURI(`/api/tag?apikey=${this.apiKey}`);
-        https.get(options, (resp) => {
-            let data = '';
-            resp.on('data', (chunk) => {
-                data += chunk;
+    searchTags(): Promise<Tag[]> {
+        return new Promise((resolve, reject) => {
+            let options = this.options();
+            options.path = encodeURI(`/api/tag?apikey=${this.apiKey}`);
+            https.get(options, (resp) => {
+                let data = '';
+                resp.on('data', (chunk) => {
+                    data += chunk;
+                });
+                resp.on('end', () => {
+                    console.log(`End searchTags: ${data}`);
+                    resolve(JSON.parse(data));
+                });
+            }).on("error", (err) => {
+                console.log("Error: " + err.message);
+                reject(err.message);
             });
-            resp.on('end', () => {
-                console.log(`End searchTags: ${data}`);
-                cb(JSON.parse(data));
-            });
-        }).on("error", (err) => {
-            console.log("Error: " + err.message);
         });
     }
 
@@ -306,7 +309,7 @@ export class SonarrClient {
         req.end();
     }
 
-    addShow(show: SonarSearchResult, chatId: number, cb: (err: Error | undefined, data: any) => any) {
+    async addShow(show: SonarSearchResult, chatId: number, cb: (err: Error | undefined, data: any) => any) {
         let seasons = show.seasons.sort((a, b) => {
             return (a.seasonNumber > b.seasonNumber ? 1 : -1)
         }).map((s, i) => {
@@ -317,25 +320,22 @@ export class SonarrClient {
         });
 
         let showTags: number[] = [];
-        this.searchTags((tags) => {
-            console.log(tags);
-            for (let i = 0; i < tags.length; i++) {
-                let tag = tags[i];
-                console.log(tag);
-                if (tag.label === `tg:${chatId.toString()}`) {
-                    showTags.push(tag.id);
-                    break;
-                }
+        let tags = await this.searchTags();
+        for (let i = 0; i < tags.length; i++) {
+            let tag = tags[i];
+            console.log(tag);
+            if (tag.label === `tg:${chatId.toString()}`) {
+                showTags.push(tag.id);
+                break;
             }
-
-            if (showTags.length > 0) {
-                this.addShowWithTags(show, seasons, showTags, cb);
-            } else {
-                this.createTag(chatId.toString(), (newTag: Tag) => {
-                    this.addShowWithTags(show, seasons, [newTag.id], cb);
-                });
-            }
-        });
+        }
+        if (showTags.length > 0) {
+            this.addShowWithTags(show, seasons, showTags, cb);
+        } else {
+            this.createTag(chatId.toString(), (newTag: Tag) => {
+                this.addShowWithTags(show, seasons, [newTag.id], cb);
+            });
+        }
     }
 
     async searchForEpisodes(seriesID: number) {

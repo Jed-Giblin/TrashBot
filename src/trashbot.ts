@@ -59,10 +59,10 @@ export class TrashBot {
         this.initCommands();
     }
 
-    sendMeme(ctx: Context, chatId: Number, replyId: number) {
+    async sendMeme(ctx: Context, chatId: Number, replyId: number) {
         let memes = fs.readdirSync('media');
         let meme_fn = memes[Math.floor(Math.random() * memes.length)];
-        ctx.replyWithPhoto({source: `media/${meme_fn}`}, {reply_to_message_id: replyId});
+        await ctx.replyWithPhoto({source: `media/${meme_fn}`}, {reply_to_message_id: replyId});
     }
 
     /**
@@ -138,7 +138,7 @@ export class TrashBot {
                         opts.opts.allUsers.forEach((id: number) => {
                             mentions.push(`[test](tg://user?id=${id}) `)
                         });
-                        ctx.replyWithMarkdown(mentions.join(''), {
+                        await ctx.replyWithMarkdown(mentions.join(''), {
                             reply_to_message_id: message.message_id,
                             parse_mode: "Markdown"
                         })
@@ -239,8 +239,8 @@ export class TrashBot {
                 let show = this.showCache.get(Number(showId));
                 let author = ctx.from;
                 let authorName = 'Someone in chat'
-                if (  author !== undefined ) {
-                    if ( author.username !== undefined ) {
+                if (author !== undefined) {
+                    if (author.username !== undefined) {
                         authorName = author.username;
                     } else {
                         authorName = author.first_name;
@@ -251,38 +251,37 @@ export class TrashBot {
                     await ctx.reply("Cleaning Show");
                     this.sonarClient.cleanShow(show, async (err, data: SonarSearchResult) => {
                         if (!err) {
-                            this.sonarClient.searchTags(async (tagList: Tag[]) => {
-                                let tagIdList = tagList.map( (t) => {
-                                    if ( t.label.startsWith('tg:')) {
-                                        return t.id;
-                                    }
-                                });
-                                for ( let i = 0; i <= data.tags.length; i++ ) {
-                                    let existingShowTag = data.tags[i];
-                                    if ( tagIdList.indexOf(existingShowTag) > -1 ) {
-                                        console.log("Found a TG user tag on the show")
-                                        // The tag exists, notify user.
-                                        let tagToUse = tagList.filter(t => t.id === existingShowTag ).shift();
-                                        if ( tagToUse ) {
-                                            console.log("Properly found the tag Value")
-                                            let chatId = tagToUse.label.split(':')[1];
-                                            if ( chatId ) {
-                                                console.log(`Found the chatID: ${chatId}`)
-                                                console.log('Message is defined')
-                                                // @ts-ignore
+                            let tagList = await this.sonarClient.searchTags();
+                            let tagIdList = tagList.map((t) => {
+                                if (t.label.startsWith('tg:')) {
+                                    return t.id;
+                                }
+                            });
+                            for (let i = 0; i <= data.tags.length; i++) {
+                                let existingShowTag = data.tags[i];
+                                if (tagIdList.indexOf(existingShowTag) > -1) {
+                                    console.log("Found a TG user tag on the show")
+                                    // The tag exists, notify user.
+                                    let tagToUse = tagList.find(t => t.id === existingShowTag);
+                                    if (tagToUse) {
+                                        console.log("Properly found the tag Value")
+                                        let chatId = tagToUse.label.split(':')[1];
+                                        if (chatId) {
+                                            console.log(`Found the chatID: ${chatId}`)
+                                            console.log('Message is defined')
+                                            // @ts-ignore
 
-                                                let body = `${data.title} is being cleaned up by ${authorName}`
-                                                console.log(body);
-                                                await this.bot.telegram.sendMessage(chatId, body);
-                                                await this.sonarClient.cleanFiles(data, async (deleted) => {
-                                                    await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
-                                                });
-                                                await ctx.reply("Cleaning up the seasons");
-                                            }
+                                            let body = `${data.title} is being cleaned up by ${authorName}`
+                                            console.log(body);
+                                            await this.bot.telegram.sendMessage(chatId, body);
+                                            await this.sonarClient.cleanFiles(data, async (deleted) => {
+                                                await ctx.reply(`Deleted ${deleted / 1000000000} Gb of space`);
+                                            });
+                                            await ctx.reply("Cleaning up the seasons");
                                         }
                                     }
                                 }
-                            });
+                            }
                         } else {
                             await ctx.reply(`Something went wrong: ${err}`);
                         }
@@ -290,6 +289,7 @@ export class TrashBot {
                 }
             }
         });
+        ;
 
         /**
          * This handler runs when the user clicks the "Add Show" button in response to action choice prompt
@@ -303,33 +303,32 @@ export class TrashBot {
             let chat = ctx.chat;
             let chatId = -1;
             let userShows: string[] = [];
-            if ( chat !== undefined ) {
+            if (chat !== undefined) {
                 chatId = chat.id;
             }
-            if ( chatId > 0 ) {
-                this.sonarClient.searchTags(async (tagList: Tag[]) => {
-                   let userTag = tagList.find((t) => {
-                       return t.label === `tg:${chatId}`;
-                   });
-                   if ( userTag !== undefined ) {
-                       this.sonarClient.searchShows(async (showList) => {
-                          for( let i = 0; i < showList.length; i++ ) {
-                              let show = showList[i];
-                              // @ts-ignore
-                              if ( show.tags.includes(userTag.id) ) {
-                                  userShows.push(show.title);
-                              }
-                          }
-                          if ( userShows.length > 0 ) {
-                              await ctx.reply(userShows.join("\n"));
-                          } else {
-                              await ctx.reply("You have no current shows")
-                          }
-                       });
-                   } else {
-                       await ctx.reply("You have never added a show");
-                   }
+            if (chatId > 0) {
+                let tagList = await this.sonarClient.searchTags();
+                let userTag = tagList.find((t) => {
+                    return t.label === `tg:${chatId}`;
                 });
+                if (userTag !== undefined) {
+                    this.sonarClient.searchShows(async (showList) => {
+                        for (let i = 0; i < showList.length; i++) {
+                            let show = showList[i];
+                            // @ts-ignore
+                            if (show.tags.includes(userTag.id)) {
+                                userShows.push(show.title);
+                            }
+                        }
+                        if (userShows.length > 0) {
+                            await ctx.reply(userShows.join("\n"));
+                        } else {
+                            await ctx.reply("You have no current shows")
+                        }
+                    });
+                } else {
+                    await ctx.reply("You have never added a show");
+                }
             } else {
                 await ctx.reply("Hmm. I something went wrong. This statement is false");
             }
