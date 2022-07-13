@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import {Markup, Scenes, Telegraf, Context} from 'telegraf'
-import {InlineKeyboardMarkup} from "telegraf/src/telegram-types";
 import TelegrafStatelessQuestion from "telegraf-stateless-question";
 import {ReplyToMessageContext} from "telegraf-stateless-question/dist/source/identifier";
 import {AddShowResult, SonarManagedShowListResult, SonarrClient, SonarSearchResult, Tag} from "./sonarr";
@@ -86,6 +85,15 @@ export class TrashBot {
             }
         });
         this.bot.command('newword', this.newWordCallback.bind(this));
+        this.bot.command('/test', async (ctx: Context) => {
+            await ctx.setChatMenuButton({
+                type: 'web_app',
+                text: 'Open WebApp',
+                web_app: {
+                    url: 'https://45a9ae24f8ce.ngrok.io/'
+                },
+            });
+        });
         this.bot.command('/meme', this.memeCallback.bind(this));
         this.bot.command('/joinall', async (ctx: Context) => {
             let message = ctx.message;
