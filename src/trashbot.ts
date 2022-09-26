@@ -13,7 +13,7 @@ interface TrashbotOptions {
     radarApiKey: string | undefined
 }
 
-interface ClientOpts {
+export interface ClientOpts {
     words: string[],
     opts: {
         memes: boolean
@@ -22,7 +22,7 @@ interface ClientOpts {
     }
 }
 
-interface Db {
+export interface Db {
     [key: number]: ClientOpts
 }
 
@@ -306,7 +306,6 @@ export class TrashBot {
             await this.showQueryQuestion.replyWithMarkdown(ctx, "Oh you want to add a show? Please respond with your search.");
             await ctx.answerCbQuery();
         });
-
         this.bot.action('my_shows', async (ctx: Context) => {
             let chat = ctx.chat;
             let chatId = -1;
@@ -341,12 +340,10 @@ export class TrashBot {
                 await ctx.reply("Hmm. I something went wrong. This statement is false");
             }
         })
-
         this.bot.action('clean_up_show', async (ctx: Context) => {
             await this.showCleanupQuestion.replyWithMarkdown(ctx, "Please type the name of the show you want to clean up");
             await ctx.answerCbQuery();
         });
-
         this.bot.use(this.showQueryQuestion.middleware());
         this.bot.use(this.showCleanupQuestion.middleware());
     }

@@ -292,8 +292,8 @@ export class SonarrClient {
             res.on('end', () => {
                 if (res.statusCode) {
                     if (res.statusCode >= 400) {
-                        console.log(resp);
-                        cb(Error(res.statusCode.toString()), undefined);
+                        let errorMessage = JSON.parse(resp)[0].errorMessage
+                        cb(Error(errorMessage), undefined);
                     } else {
                         cb(undefined, JSON.parse(resp));
                     }
