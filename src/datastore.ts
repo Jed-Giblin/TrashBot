@@ -1,5 +1,21 @@
-import {ClientOpts, Db} from "./trashbot";
+export interface TrashbotOptions {
+    defaultMemes: boolean
+    sonarApiKey: string | undefined,
+    radarApiKey: string | undefined
+}
 
+export interface ClientOpts {
+    words: string[],
+    opts: {
+        memes: boolean
+        readOnlyUsers: number[],
+        allUsers: number[]
+    }
+}
+
+export interface Db {
+    [key: number]: ClientOpts
+}
 
 export class Datastore {
     myDb: Db = {};

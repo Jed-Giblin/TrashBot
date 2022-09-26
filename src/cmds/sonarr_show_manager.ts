@@ -1,7 +1,6 @@
 import {CommandList, TelegramBaseCommandImp, errorPrivateOnly} from "./base_cmd"
 import {Context, Markup, NarrowedContext, Telegraf} from "telegraf";
-import {ClientOpts} from "../trashbot";
-import {Datastore} from "../datastore";
+import {Datastore, ClientOpts} from "../datastore";
 import TelegrafStatelessQuestion from "telegraf-stateless-question";
 import {ReplyToMessageContext} from "telegraf-stateless-question/dist/source/identifier";
 import {AddShowResult, SonarManagedShowListResult, SonarrClient, SonarSearchResult} from "../sonarr";

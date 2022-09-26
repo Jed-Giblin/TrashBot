@@ -1,7 +1,6 @@
 import {TelegramBaseCommandImp, TelegramCommand} from "./base_cmd"
 import {Context} from "telegraf";
-import {ClientOpts} from "../trashbot";
-import {Datastore} from "../datastore";
+import {Datastore, ClientOpts} from "../datastore";
 
 export class PtoCommand extends TelegramBaseCommandImp {
     name: string = "PtoCommand";

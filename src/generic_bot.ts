@@ -3,7 +3,7 @@ import {PtoCommand} from "./cmds/pto"
 import {CommandList, TelegramCommand} from "./cmds/base_cmd"
 import {Context, Telegraf} from "telegraf";
 import * as fs from "fs";
-import {Db} from "./trashbot";
+import {Db} from "./datastore";
 import {Datastore} from "./datastore";
 import {NewWordCommand} from "./cmds/add_word";
 import {SonarrShowManagerCommand} from "./cmds/sonarr_show_manager";
