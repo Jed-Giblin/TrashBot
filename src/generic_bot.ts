@@ -7,6 +7,7 @@ import {Db} from "./datastore";
 import {Datastore} from "./datastore";
 import {NewWordCommand} from "./cmds/add_word";
 import {SonarrShowManagerCommand} from "./cmds/sonarr_show_manager";
+import {SetupCommand} from "./cmds/setup";
 
 
 abstract class TelegramBot {
@@ -18,14 +19,15 @@ abstract class TelegramBot {
         this.bot = bot;
         this.commandModules = commandModules;
         if (fs.existsSync('db/db.json')) {
-            if ( fs.existsSync("db/db.json.lock") ) {
+            if (fs.existsSync("db/db.json.lock")) {
                 throw new Error("Database is locked by another process");
             }
             this.lockDb();
             this.setupShutdownHandlers();
-            this.dataStore = new Datastore( JSON.parse(fs.readFileSync('db/db.json').toString()) );
+            this.dataStore = new Datastore(JSON.parse(fs.readFileSync('db/db.json').toString()));
+            this.dataStore.migrate()
         } else {
-            this.dataStore = new Datastore({});
+            this.dataStore = new Datastore({servers: {}, all_servers: {}});
         }
         this.addCommands();
     }
@@ -38,6 +40,7 @@ abstract class TelegramBot {
             this.shutdownHandler();
         });
     }
+
     shutdownHandler() {
         console.log("Releasing DB lock");
         this.unlockDb();
@@ -45,11 +48,12 @@ abstract class TelegramBot {
     }
 
     lockDb() {
-        fs.closeSync( fs.openSync('db/db.json.lock', 'w') );
+        fs.closeSync(fs.openSync('db/db.json.lock', 'w'));
     }
 
     unlockDb() {
-       fs.rmSync( "db/db.json.lock", );
+        fs.writeFileSync("db/db.json", JSON.stringify(this.dataStore.myDb));
+        fs.rmSync("db/db.json.lock",);
     }
 
     run() {
@@ -67,8 +71,9 @@ abstract class TelegramBot {
 
 export class TrashBot extends TelegramBot {
     static commandModules = [
-        TestCommand, PtoCommand, NewWordCommand, SonarrShowManagerCommand
+        TestCommand, PtoCommand, NewWordCommand, SonarrShowManagerCommand, SetupCommand
     ]
+
     constructor(bot: Telegraf<Context>) {
         super(bot, TrashBot.commandModules);
         this.bot.on('message', this.checkForTrash.bind(this));
@@ -85,7 +90,7 @@ export class TrashBot extends TelegramBot {
         if (message !== undefined) {
             let chatid = message.chat.id;
             let groupChat = this.dataStore.getChat(chatid);
-            if (chatid && groupChat ) {
+            if (chatid && groupChat) {
                 if (groupChat.opts.readOnlyUsers.indexOf(message.from.id) > -1) {
                     ctx.deleteMessage(message.message_id);
                     return;
